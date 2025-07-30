@@ -12,7 +12,7 @@ import dotenv from "dotenv";
 import { getAllTools, handleToolCall } from "./services/index.js";
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: '/opt/akash-ms-mcp/.env' });
 
 // Create server with tool capabilities
 const server = new Server(
