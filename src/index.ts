@@ -9,25 +9,33 @@ import {
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import dotenv from "dotenv";
+import fs from 'fs';
 import { getAllTools, handleToolCall } from "./services/index.js";
 
-import dotenv from "dotenv";
-import { getAllTools, handleToolCall } from "./services/index.js";
+// Write debug to file
+const debugInfo = `
+=== DEBUG LOG ${new Date().toISOString()} ===
+Process CWD: ${process.cwd()}
+.env file exists (relative): ${fs.existsSync('.env')}
+.env file exists (absolute): ${fs.existsSync('/opt/akash-ms-mcp/.env')}
+BEFORE dotenv - NETDATA_API_TOKEN present: ${!!process.env.NETDATA_API_TOKEN}
+=====================================
 
-// Add these debug lines here
-console.error("DEBUG: Process CWD:", process.cwd());
-console.error("DEBUG: .env file exists:", require('fs').existsSync('.env'));
-console.error("DEBUG: Explicit path .env exists:", require('fs').existsSync('/opt/akash-ms-mcp/.env'));
+`;
+fs.appendFileSync('/tmp/mcp-debug.log', debugInfo);
 
 // Load environment variables
 dotenv.config({ path: '/opt/akash-ms-mcp/.env' });
 
-// Add these debug lines after dotenv.config()
-console.error("DEBUG: NETDATA_API_TOKEN after dotenv:", !!process.env.NETDATA_API_TOKEN);
-console.error("DEBUG: NETDATA_API_TOKEN length:", process.env.NETDATA_API_TOKEN?.length || 0);
+// Debug AFTER dotenv
+const debugInfo2 = `
+AFTER dotenv - NETDATA_API_TOKEN present: ${!!process.env.NETDATA_API_TOKEN}
+NETDATA_API_TOKEN length: ${process.env.NETDATA_API_TOKEN?.length || 0}
+NETDATA_SPACE_ID: ${process.env.NETDATA_SPACE_ID}
+All NETDATA env vars: ${Object.keys(process.env).filter(k => k.startsWith('NETDATA')).join(', ')}
 
-// Load environment variables
-dotenv.config({ path: '/opt/akash-ms-mcp/.env' });
+`;
+fs.appendFileSync('/tmp/mcp-debug.log', debugInfo2);
 
 // Create server with tool capabilities
 const server = new Server(
