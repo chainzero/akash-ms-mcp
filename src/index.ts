@@ -8,7 +8,6 @@ import {
   ListToolsRequestSchema,
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
-import dotenv from "dotenv";
 import fs from 'fs';
 import { getAllTools, handleToolCall } from "./services/index.js";
 
@@ -24,8 +23,6 @@ BEFORE dotenv - NETDATA_API_TOKEN present: ${!!process.env.NETDATA_API_TOKEN}
 `;
 fs.appendFileSync('/tmp/mcp-debug.log', debugInfo);
 
-// Load environment variables
-dotenv.config({ path: '/opt/akash-ms-mcp/.env' });
 
 // Debug AFTER dotenv
 const debugInfo2 = `
