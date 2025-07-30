@@ -181,7 +181,7 @@ async function extractRPCNodes() {
         const urlRegex = /(https?:\/\/[^\s\)]+(?:rpc|api|grpc)[^\s\)]*)/gi;
         const matches = content.match(urlRegex) || [];
         
-        matches.forEach(url => {
+        matches.forEach((url: string) => {
           if (!rpcInfo.endpoints.includes(url)) {
             rpcInfo.endpoints.push(url);
           }
@@ -189,7 +189,7 @@ async function extractRPCNodes() {
 
         // Look for structured RPC information
         const lines = content.split('\n');
-        lines.forEach(line => {
+        lines.forEach((line: string) => {
           if (line.toLowerCase().includes('rpc:') || 
               line.toLowerCase().includes('api:') ||
               line.toLowerCase().includes('grpc:')) {
