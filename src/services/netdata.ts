@@ -155,7 +155,7 @@ export function getToolNames() {
 }
 
 // Route tool calls to appropriate handlers
-export async function handleToolCall(name: string, args: any): Promise<ToolResponse> {
+export async function handleToolCall(name: string, args: any) {
   switch (name) {
     case "get_space_info":
       return await getSpaceInfo(args);
@@ -342,7 +342,7 @@ export async function getNetDataAlarms(): Promise<NetDataAlarmData> {
 // NETDATA TOOL IMPLEMENTATIONS
 // =============================================================================
 
-async function getSpaceInfo(args: any): Promise<ToolResponse> {
+async function getSpaceInfo(args: any) {
   try {
     const spacesData = await makeCloudRequest('/spaces');
     return {
@@ -365,7 +365,7 @@ async function getSpaceInfo(args: any): Promise<ToolResponse> {
   }
 }
 
-async function getNodesInfo(args: any): Promise<ToolResponse> {
+async function getNodesInfo(args: any) {
   try {
     const nodesData = await makeCloudRequest(`/spaces/${config.netdata.spaceId}/rooms`);
     return {
@@ -388,7 +388,7 @@ async function getNodesInfo(args: any): Promise<ToolResponse> {
   }
 }
 
-async function getInfrastructureOverview(args: any): Promise<ToolResponse> {
+async function getInfrastructureOverview(args: any) {
   try {
     const spacesData = await makeCloudRequest('/spaces');
     const roomsData = await makeCloudRequest(`/spaces/${config.netdata.spaceId}/rooms`);
@@ -455,7 +455,7 @@ async function getInfrastructureOverview(args: any): Promise<ToolResponse> {
   }
 }
 
-async function getRoomContexts(args: any): Promise<ToolResponse> {
+async function getRoomContexts(args: any) {
   const { room_name } = args || {};
   
   try {
@@ -509,7 +509,7 @@ async function getRoomContexts(args: any): Promise<ToolResponse> {
   }
 }
 
-async function getRoomNodes(args: any): Promise<ToolResponse> {
+async function getRoomNodes(args: any) {
   const { room_name } = args || {};
   
   try {
@@ -561,7 +561,7 @@ async function getRoomNodes(args: any): Promise<ToolResponse> {
   }
 }
 
-async function testRoomParameter(args: any): Promise<ToolResponse> {
+async function testRoomParameter(args: any) {
   const { room_name } = args || {};
   
   return {
@@ -574,7 +574,7 @@ async function testRoomParameter(args: any): Promise<ToolResponse> {
   };
 }
 
-async function debugApiCall(args: any): Promise<ToolResponse> {
+async function debugApiCall(args: any) {
   return {
     content: [
       {
@@ -585,7 +585,7 @@ async function debugApiCall(args: any): Promise<ToolResponse> {
   };
 }
 
-async function testDirectRoomContexts(args: any): Promise<ToolResponse> {
+async function testDirectRoomContexts(args: any) {
   const roomId = "016d43f2-d5c0-4a78-913c-a0bc91e245ed";
   
   const info = {
@@ -623,7 +623,7 @@ async function testDirectRoomContexts(args: any): Promise<ToolResponse> {
   }
 }
 
-async function testCategoryMetricsActivity(args: any): Promise<ToolResponse> {
+async function testCategoryMetricsActivity(args: any) {
   const { room_name, category } = args || {};
   
   if (!room_name || !category) {
@@ -715,7 +715,7 @@ for accurate metric activity detection.
   }
 }
 
-async function testNetworkMetricsActivity(args: any): Promise<ToolResponse> {
+async function testNetworkMetricsActivity(args: any) {
   const { room_name } = args || {};
   
   if (!room_name) {
@@ -732,7 +732,7 @@ async function testNetworkMetricsActivity(args: any): Promise<ToolResponse> {
   return await testCategoryMetricsActivity({ room_name, category: 'network' });
 }
 
-async function getActiveMetricsSummary(args: any): Promise<ToolResponse> {
+async function getActiveMetricsSummary(args: any) {
   const { room_name, sample_size = 10 } = args || {};
   
   if (!room_name) {

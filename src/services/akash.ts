@@ -1,6 +1,6 @@
 import { makeAkashRequest, config } from "../utils.js";
 import { getNetDataAlarms } from "./netdata.js";
-import type { ToolResponse, AkashProvider } from "../types.js";
+import type { AkashProvider } from "../types.js";
 
 // Akash tool definitions
 export function getTools() {
@@ -62,8 +62,7 @@ export function getToolNames() {
 }
 
 // Route tool calls to appropriate handlers
-export async function handleToolCall(name: string, args: any): Promise<ToolResponse> {
-  switch (name) {
+export async function handleToolCall(name: string, args: any) {  switch (name) {
     case "get_akash_providers_down":
       return await getAkashProvidersDown(args);
     case "get_akash_gpu_issues":
@@ -85,7 +84,7 @@ export async function handleToolCall(name: string, args: any): Promise<ToolRespo
 // AKASH PROVIDER TOOL IMPLEMENTATIONS
 // =============================================================================
 
-async function getAkashProvidersDown(args: any): Promise<ToolResponse> {
+async function getAkashProvidersDown(args: any) {
   try {
     const downProviders = await makeAkashRequest('/providers/down');
     
@@ -142,7 +141,7 @@ SUMMARY:
   }
 }
 
-async function getAkashGpuIssues(args: any): Promise<ToolResponse> {
+async function getAkashGpuIssues(args: any) {
   try {
     const gpuIssues = await makeAkashRequest('/gpuissues');
     
@@ -200,7 +199,7 @@ These GPU allocation issues require attention to ensure proper resource manageme
   }
 }
 
-async function getAkashCpuIssues(args: any): Promise<ToolResponse> {
+async function getAkashCpuIssues(args: any) {
   try {
     const cpuIssues = await makeAkashRequest('/issues/res/cpu');
     
@@ -259,7 +258,7 @@ These CPU allocation issues require immediate attention.
   }
 }
 
-async function getAkashMemoryIssues(args: any): Promise<ToolResponse> {
+async function getAkashMemoryIssues(args: any) {
   try {
     const memoryIssues = await makeAkashRequest('/issues/res/memory');
     
@@ -318,7 +317,7 @@ These memory allocation issues require immediate attention.
   }
 }
 
-async function getAkashPartialFailures(args: any): Promise<ToolResponse> {
+async function getAkashPartialFailures(args: any) {
   try {
     const partialFailures = await makeAkashRequest('/providers/partialfailures');
     
@@ -374,7 +373,7 @@ These partial failures indicate connectivity issues that should be investigated.
   }
 }
 
-async function getAkashAllIssuesReport(args: any): Promise<ToolResponse> {
+async function getAkashAllIssuesReport(args: any) {
   try {
     // Fetch all issue types in parallel - including NetData alarms
     const [netdataAlarms, gpuIssues, cpuIssues, memoryIssues, downProviders, partialFailures] = await Promise.all([
