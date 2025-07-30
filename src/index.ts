@@ -35,11 +35,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 });
 
 // Handle tool calls
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
   const { name, arguments: args } = request.params;
 
   try {
-    return await handleToolCall(name, args);
+    const result = await handleToolCall(name, args);
+    return result;
   } catch (error) {
     console.error(`Error in ${name}:`, error);
     
@@ -47,9 +48,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       throw error;
     }
     
+    const errorMessage = error instanceof Error ? error.message : String(error);
     throw new McpError(
       ErrorCode.InternalError,
-      `Error executing tool ${name}: ${error.message}`
+      `Error executing tool ${name}: ${errorMessage}`
     );
   }
 });
