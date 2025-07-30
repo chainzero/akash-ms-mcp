@@ -7,7 +7,7 @@ import {
   filterContextsByCategory,
   testMetricsInBatches
 } from "../utils.js";
-import type { ToolResponse, MetricTestResults, NetDataAlarmData } from "../types.js";
+import type { MetricTestResults, NetDataAlarmData } from "../types.js";
 
 // NetData tool definitions
 export function getTools() {

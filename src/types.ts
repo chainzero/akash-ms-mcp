@@ -1,13 +1,5 @@
 // Shared type definitions
 
-export interface ToolResponse {
-  content: Array<{
-    type: "text";
-    text: string;
-  }>;
-  isError?: boolean;
-}
-
 export interface MetricResult {
   context: string;
   active: boolean;

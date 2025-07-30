@@ -39,8 +39,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
   const { name, arguments: args } = request.params;
 
   try {
-    const result = await handleToolCall(name, args);
-    return result;
+    return await handleToolCall(name, args);
   } catch (error) {
     console.error(`Error in ${name}:`, error);
     
