@@ -16,6 +16,13 @@ export const config = {
   }
 };
 
+// Add this after the config object (around line 15)
+console.error("DEBUG - Environment variables:");
+console.error("NETDATA_API_TOKEN present:", !!process.env.NETDATA_API_TOKEN);
+console.error("NETDATA_API_TOKEN length:", process.env.NETDATA_API_TOKEN?.length || 0);
+console.error("NETDATA_SPACE_ID:", process.env.NETDATA_SPACE_ID);
+console.error("Config token present:", !!config.netdata.apiToken);
+
 // Known room IDs mapping
 export const ROOM_IDS = {
   'valdi-sdg-h100': '016d43f2-d5c0-4a78-913c-a0bc91e245ed',
