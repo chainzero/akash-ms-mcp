@@ -253,8 +253,26 @@ export async function getNetDataAlarms(): Promise<NetDataAlarmData> {
       roomsData.map((room: any) => [room.id, room.name])
     );
     
-    let roomsWithAlarms = [];
-    let roomsWithCriticals = [];
+    // Create complete room ID to name mapping from API
+    const roomIdToName = Object.fromEntries(
+      roomsData.map((room: any) => [room.id, room.name])
+    );
+    
+    let roomsWithAlarms: Array<{
+      roomID: string;
+      roomName: string;
+      warnings: number;
+      critical: number;
+      unreachable: number;
+    }> = [];
+    
+    let roomsWithCriticals: Array<{
+      roomID: string;
+      roomName: string;
+      warnings: number;
+      critical: number;
+      unreachable: number;
+    }> = [];
     
     roomAlarms.forEach((room: any) => {
       const warnings = room.alarmCounter?.warning || 0;
@@ -284,7 +302,15 @@ export async function getNetDataAlarms(): Promise<NetDataAlarmData> {
     });
     
     // Get detailed critical alarm information
-    let criticalAlarmDetails = [];
+    let criticalAlarmDetails: Array<{
+      host: string;
+      alertName: string;
+      status: string;
+      description: string;
+      chart: string;
+      room: string;
+    }> = [];
+    
     if (roomsWithCriticals.length > 0) {
       criticalAlarmDetails = await getCriticalAlarmDetails(roomsWithCriticals);
     }
