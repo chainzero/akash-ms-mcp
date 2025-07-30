@@ -2,7 +2,7 @@ import axios from "axios";
 import dotenv from "dotenv";
 
 // Load environment variables at the module level
-dotenv.config({ path: '/opt/akash-ms-mcp/.env' });
+dotenv.config({ path: '/opt/akash-ms-mcp/.env', debug: false });
 
 // Lazy-load configuration function
 export function getConfig() {
