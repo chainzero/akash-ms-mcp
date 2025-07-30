@@ -247,12 +247,7 @@ export async function getNetDataAlarms(): Promise<NetDataAlarmData> {
     
     // Process the alarm data
     const roomAlarms = alarmsData.results || [];
-    
-    // Create complete room ID to name mapping from API
-    const roomIdToName = Object.fromEntries(
-      roomsData.map((room: any) => [room.id, room.name])
-    );
-    
+        
     // Create complete room ID to name mapping from API
     const roomIdToName = Object.fromEntries(
       roomsData.map((room: any) => [room.id, room.name])
