@@ -1,0 +1,371 @@
+import axios from "axios";
+
+// GitHub configuration - will use environment variables
+function getGitHubConfig() {
+  return {
+    token: process.env.GITHUB_TOKEN,
+    repoOwner: process.env.REPO_OWNER || 'ovrclk',
+    repoName: process.env.REPO_NAME || 'server-mgmt',
+  };
+}
+
+// GitHub tool definitions
+export function getTools() {
+  return [
+    {
+      name: "search_wiki",
+      description: "Search across GitHub wiki pages for specific content",
+      inputSchema: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Search term to look for in wiki pages"
+          }
+        },
+        required: ["query"],
+      },
+    },
+    {
+      name: "get_wiki_page",
+      description: "Retrieve content from a specific GitHub wiki page",
+      inputSchema: {
+        type: "object",
+        properties: {
+          page_name: {
+            type: "string",
+            description: "Name of the wiki page to retrieve (e.g., 'Home', 'RPC-Nodes')"
+          }
+        },
+        required: ["page_name"],
+      },
+    },
+    {
+      name: "list_rpc_nodes",
+      description: "Extract and list all RPC node information from the engineering wiki",
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
+      name: "get_wiki_pages_list",
+      description: "Get list of all available wiki pages",
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+  ];
+}
+
+// Get tool names for routing
+export function getToolNames() {
+  return getTools().map(tool => tool.name);
+}
+
+// Route tool calls to appropriate handlers
+export async function handleToolCall(name: string, args: any) {
+  switch (name) {
+    case "search_wiki":
+      return await searchWiki(args);
+    case "get_wiki_page":
+      return await getWikiPage(args);
+    case "list_rpc_nodes":
+      return await listRpcNodes(args);
+    case "get_wiki_pages_list":
+      return await getWikiPagesList(args);
+    default:
+      throw new Error(`Unknown GitHub tool: ${name}`);
+  }
+}
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+// Helper function to make authenticated requests to GitHub
+async function makeGitHubRequest(url: string, options: any = {}) {
+  const config = getGitHubConfig();
+  
+  if (!config.token) {
+    throw new Error('GitHub token is not configured');
+  }
+
+  const headers = {
+    'Authorization': `token ${config.token}`,
+    'Accept': 'application/vnd.github.v3+json',
+    'User-Agent': 'Akash-MCP-Server',
+    ...options.headers
+  };
+
+  try {
+    const response = await axios.get(url, { headers, ...options });
+    return response.data;
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      return null; // Page not found
+    }
+    throw new Error(`GitHub API error: ${error.response?.data?.message || error.message}`);
+  }
+}
+
+// Helper function to get wiki page content
+async function getWikiPageContent(pageName: string) {
+  const config = getGitHubConfig();
+  const url = `https://raw.githubusercontent.com/wiki/${config.repoOwner}/${config.repoName}/${pageName}.md`;
+  
+  try {
+    const response = await axios.get(url, {
+      headers: {
+        'Authorization': `token ${config.token}`,
+      }
+    });
+    return response.data;
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      return null;
+    }
+    throw new Error(`Failed to fetch wiki page: ${error.message}`);
+  }
+}
+
+// Helper function to search wiki content
+async function searchWikiContent(searchTerm: string) {
+  const commonPages = [
+    'Home', 'Overview', 'Index', 'README',
+    'RPC-Nodes', 'RPC_Nodes', 'RPC', 'Nodes',
+    'Infrastructure', 'Servers', 'Providers',
+    'Network', 'Deployment', 'Configuration',
+    'Monitoring', 'Operations', 'Maintenance'
+  ];
+
+  const results = [];
+  
+  for (const pageName of commonPages) {
+    try {
+      const content = await getWikiPageContent(pageName);
+      if (content && content.toLowerCase().includes(searchTerm.toLowerCase())) {
+        results.push({
+          page: pageName,
+          content: content,
+          preview: content.substring(0, 200) + '...'
+        });
+      }
+    } catch (error) {
+      // Skip pages that can't be accessed
+      continue;
+    }
+  }
+  
+  return results;
+}
+
+// Helper function to extract RPC nodes from wiki content
+async function extractRPCNodes() {
+  const rpcPages = ['RPC-Nodes', 'RPC_Nodes', 'RPC', 'Home', 'Overview'];
+  
+  const rpcInfo = {
+    nodes: [] as string[],
+    endpoints: [] as string[],
+    raw_content: {} as Record<string, string>
+  };
+
+  for (const pageName of rpcPages) {
+    try {
+      const content = await getWikiPageContent(pageName);
+      if (content) {
+        rpcInfo.raw_content[pageName] = content;
+        
+        // Extract URLs that look like RPC/API endpoints
+        const urlRegex = /(https?:\/\/[^\s\)]+(?:rpc|api|grpc)[^\s\)]*)/gi;
+        const matches = content.match(urlRegex) || [];
+        
+        matches.forEach(url => {
+          if (!rpcInfo.endpoints.includes(url)) {
+            rpcInfo.endpoints.push(url);
+          }
+        });
+
+        // Look for structured RPC information
+        const lines = content.split('\n');
+        lines.forEach(line => {
+          if (line.toLowerCase().includes('rpc:') || 
+              line.toLowerCase().includes('api:') ||
+              line.toLowerCase().includes('grpc:')) {
+            rpcInfo.nodes.push(line.trim());
+          }
+        });
+      }
+    } catch (error) {
+      // Skip pages that can't be accessed
+      continue;
+    }
+  }
+
+  return rpcInfo;
+}
+
+// =============================================================================
+// GITHUB WIKI TOOL IMPLEMENTATIONS
+// =============================================================================
+
+async function searchWiki(args: any) {
+  const { query } = args;
+
+  if (!query) {
+    return {
+      content: [{
+        type: "text",
+        text: "Error: query parameter is required"
+      }]
+    };
+  }
+
+  try {
+    const results = await searchWikiContent(query);
+    
+    if (results.length === 0) {
+      return {
+        content: [{
+          type: "text",
+          text: `No wiki pages found containing "${query}"`
+        }]
+      };
+    }
+
+    const searchResults = results.map(result => ({
+      page: result.page,
+      preview: result.preview,
+      found_in: `Page: ${result.page}`
+    }));
+
+    return {
+      content: [{
+        type: "text",
+        text: `Found ${results.length} wiki page(s) containing "${query}":\n\n${JSON.stringify(searchResults, null, 2)}`
+      }]
+    };
+  } catch (error: any) {
+    return {
+      content: [{
+        type: "text",
+        text: `Error searching wiki: ${error.message}`
+      }]
+    };
+  }
+}
+
+async function getWikiPage(args: any) {
+  const { page_name } = args;
+
+  if (!page_name) {
+    return {
+      content: [{
+        type: "text",
+        text: "Error: page_name parameter is required"
+      }]
+    };
+  }
+
+  try {
+    const content = await getWikiPageContent(page_name);
+    
+    if (!content) {
+      return {
+        content: [{
+          type: "text",
+          text: `Wiki page "${page_name}" not found. Try common pages like: Home, Overview, RPC-Nodes, Infrastructure`
+        }]
+      };
+    }
+
+    return {
+      content: [{
+        type: "text",
+        text: `Content from wiki page "${page_name}":\n\n${content}`
+      }]
+    };
+  } catch (error: any) {
+    return {
+      content: [{
+        type: "text",
+        text: `Error getting wiki page: ${error.message}`
+      }]
+    };
+  }
+}
+
+async function listRpcNodes(args: any) {
+  try {
+    const rpcInfo = await extractRPCNodes();
+    
+    const summary = {
+      total_endpoints: rpcInfo.endpoints.length,
+      total_nodes: rpcInfo.nodes.length,
+      endpoints: rpcInfo.endpoints,
+      nodes: rpcInfo.nodes,
+      pages_searched: Object.keys(rpcInfo.raw_content)
+    };
+
+    return {
+      content: [{
+        type: "text",
+        text: `RPC Nodes Information:\n\n${JSON.stringify(summary, null, 2)}`
+      }]
+    };
+  } catch (error: any) {
+    return {
+      content: [{
+        type: "text",
+        text: `Error extracting RPC nodes: ${error.message}`
+      }]
+    };
+  }
+}
+
+async function getWikiPagesList(args: any) {
+  const config = getGitHubConfig();
+  
+  try {
+    // Try to get the wiki repository information
+    const wikiUrl = `https://api.github.com/repos/${config.repoOwner}/${config.repoName}.wiki/contents`;
+    const pages = await makeGitHubRequest(wikiUrl);
+    
+    if (!pages) {
+      // Fallback to common page names
+      const commonPages = [
+        'Home', 'Overview', 'Index', 'README',
+        'RPC-Nodes', 'RPC_Nodes', 'RPC', 'Nodes',
+        'Infrastructure', 'Servers', 'Providers',
+        'Network', 'Deployment', 'Configuration',
+        'Monitoring', 'Operations', 'Maintenance'
+      ];
+      
+      return {
+        content: [{
+          type: "text",
+          text: `Common wiki pages to try:\n${commonPages.join(', ')}\n\nNote: Use get_wiki_page tool to retrieve specific page content.`
+        }]
+      };
+    }
+
+    const pageList = pages
+      .filter((file: any) => file.name.endsWith('.md'))
+      .map((file: any) => file.name.replace('.md', ''));
+
+    return {
+      content: [{
+        type: "text",
+        text: `Available wiki pages:\n${pageList.join(', ')}\n\nUse get_wiki_page tool to retrieve specific page content.`
+      }]
+    };
+  } catch (error: any) {
+    return {
+      content: [{
+        type: "text",
+        text: `Error listing wiki pages: ${error.message}\n\nTry common pages: Home, Overview, RPC-Nodes, Infrastructure`
+      }]
+    };
+  }
+}
