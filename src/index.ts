@@ -11,6 +11,21 @@ import {
 import dotenv from "dotenv";
 import { getAllTools, handleToolCall } from "./services/index.js";
 
+import dotenv from "dotenv";
+import { getAllTools, handleToolCall } from "./services/index.js";
+
+// Add these debug lines here
+console.error("DEBUG: Process CWD:", process.cwd());
+console.error("DEBUG: .env file exists:", require('fs').existsSync('.env'));
+console.error("DEBUG: Explicit path .env exists:", require('fs').existsSync('/opt/akash-ms-mcp/.env'));
+
+// Load environment variables
+dotenv.config({ path: '/opt/akash-ms-mcp/.env' });
+
+// Add these debug lines after dotenv.config()
+console.error("DEBUG: NETDATA_API_TOKEN after dotenv:", !!process.env.NETDATA_API_TOKEN);
+console.error("DEBUG: NETDATA_API_TOKEN length:", process.env.NETDATA_API_TOKEN?.length || 0);
+
 // Load environment variables
 dotenv.config({ path: '/opt/akash-ms-mcp/.env' });
 
