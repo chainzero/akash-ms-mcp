@@ -1,8 +1,41 @@
 import axios from "axios";
+import fs from "fs";
+
+// Manually parse .env file to avoid dotenv console output
+function loadEnvManually() {
+  try {
+    const envContent = fs.readFileSync('/opt/akash-ms-mcp/.env', 'utf8');
+    const envLines = envContent.split('\n');
+    
+    for (const line of envLines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine && !trimmedLine.startsWith('#')) {
+        const [key, ...valueParts] = trimmedLine.split('=');
+        if (key && valueParts.length > 0) {
+          const value = valueParts.join('=').replace(/^["']|["']$/g, ''); // Remove quotes
+          process.env[key.trim()] = value.trim();
+          
+          // Debug: Log when we set NETDATA_API_TOKEN
+          if (key.trim() === 'NETDATA_API_TOKEN') {
+            fs.appendFileSync('/tmp/env-debug.log', `Manual env loading: Set ${key.trim()} = ${value.trim().substring(0,10)}...\n`);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    fs.appendFileSync('/tmp/env-debug.log', `Manual env loading failed: ${error}\n`);
+  }
+}
+
+// Load environment variables silently at module level
+loadEnvManually();
+
+// Debug the config creation
+fs.appendFileSync('/tmp/env-debug.log', `Config creation: NETDATA_API_TOKEN present = ${!!process.env.NETDATA_API_TOKEN}\n`);
 
 // Lazy-load configuration function
 export function getConfig() {
-  return {
+  const cfg = {
     netdata: {
       cloudBaseUrl: process.env.NETDATA_CLOUD_URL || 'https://app.netdata.cloud',
       spaceId: process.env.NETDATA_SPACE_ID || '4e5af321-fd71-4cd7-8456-aa96d7029ab8',
@@ -16,6 +49,9 @@ export function getConfig() {
       apiTimeout: 10000,
     }
   };
+  
+  fs.appendFileSync('/tmp/env-debug.log', `getConfig called: token present = ${!!cfg.netdata.apiToken}\n`);
+  return cfg;
 }
 
 // Keep the old export for backward compatibility, but make it lazy
