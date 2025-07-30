@@ -4,21 +4,26 @@ import dotenv from "dotenv";
 // Load environment variables at the module level
 dotenv.config({ path: '/opt/akash-ms-mcp/.env' });
 
-// Load configuration from environment
-export const config = {
-  netdata: {
-    cloudBaseUrl: process.env.NETDATA_CLOUD_URL || 'https://app.netdata.cloud',
-    spaceId: process.env.NETDATA_SPACE_ID || '4e5af321-fd71-4cd7-8456-aa96d7029ab8',
-    apiToken: process.env.NETDATA_API_TOKEN,
-    sandboxHost: "216.153.63.25", // CoreWeave sandbox host
-    agentTimeout: 5000, // 5 second timeout for direct agent queries
-    rateLimitDelay: 100, // 100ms delay between requests
-  },
-  akash: {
-    providerApiUrl: 'https://providermon.akashnet.net',
-    apiTimeout: 10000, // 10 second timeout
-  }
-};
+// Lazy-load configuration function
+export function getConfig() {
+  return {
+    netdata: {
+      cloudBaseUrl: process.env.NETDATA_CLOUD_URL || 'https://app.netdata.cloud',
+      spaceId: process.env.NETDATA_SPACE_ID || '4e5af321-fd71-4cd7-8456-aa96d7029ab8',
+      apiToken: process.env.NETDATA_API_TOKEN,
+      sandboxHost: "216.153.63.25",
+      agentTimeout: 5000,
+      rateLimitDelay: 100,
+    },
+    akash: {
+      providerApiUrl: 'https://providermon.akashnet.net',
+      apiTimeout: 10000,
+    }
+  };
+}
+
+// Keep the old export for backward compatibility, but make it lazy
+export const config = getConfig();
 
 // Known room IDs mapping
 export const ROOM_IDS = {
@@ -56,17 +61,18 @@ export const METRIC_CATEGORIES = {
 
 // Helper function to make authenticated NetData Cloud API requests
 export async function makeCloudRequest(endpoint: string, params = {}) {
-  if (!config.netdata.apiToken) {
+  const cfg = getConfig();
+  if (!cfg.netdata.apiToken) {
     throw new Error('NetData API token is not configured');
   }
 
   const headers = {
-    'Authorization': `Bearer ${config.netdata.apiToken}`,
+    'Authorization': `Bearer ${cfg.netdata.apiToken}`,
     'Accept': 'application/json',
   };
 
   try {
-    const response = await axios.get(`${config.netdata.cloudBaseUrl}/api/v2${endpoint}`, {
+    const response = await axios.get(`${cfg.netdata.cloudBaseUrl}/api/v2${endpoint}`, {
       headers,
       params,
     });
