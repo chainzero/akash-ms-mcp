@@ -1,0 +1,48 @@
+{
+  "name": "netdata-mcp-server-enhanced",
+  "version": "2.10.1",
+  "description": "Enhanced MCP Server for NetData Cloud and Akash Network monitoring",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc && node dist/index.js",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "test": "node -e \"console.log('MCP Server loaded successfully');\"",
+    "lint": "echo 'Linting not configured yet'",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "netdata",
+    "akash",
+    "monitoring",
+    "infrastructure",
+    "model-context-protocol"
+  ],
+  "author": "scott",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.15.0",
+    "axios": "^1.10.0",
+    "dotenv": "^17.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "nodemon": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/netdata-mcp-server-enhanced.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/netdata-mcp-server-enhanced/issues"
+  },
+  "homepage": "https://github.com/yourusername/netdata-mcp-server-enhanced#readme"
+}
