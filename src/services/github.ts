@@ -1,5 +1,15 @@
 import axios from "axios";
 
+// Common wiki pages to search - shared constant
+const COMMON_WIKI_PAGES = [
+  'Home', 'Overview', 'Index', 'README',
+  'RPC-Nodes', 'RPC_Nodes', 'RPC', 'Nodes',
+  'Infrastructure', 'Servers', 'Providers', 'OCL-Providers',
+  'Network', 'Deployment', 'Configuration',
+  'Monitoring', 'Operations', 'Maintenance',
+  'DevOps-Phone-Numbers', 'Contact', 'Engineers'
+];
+
 // GitHub configuration - will use environment variables
 function getGitHubConfig() {
   return {
@@ -132,17 +142,10 @@ async function getWikiPageContent(pageName: string) {
 
 // Helper function to search wiki content
 async function searchWikiContent(searchTerm: string) {
-  const commonPages = [
-    'Home', 'Overview', 'Index', 'README',
-    'RPC-Nodes', 'RPC_Nodes', 'RPC', 'Nodes',
-    'Infrastructure', 'Servers', 'Providers',
-    'Network', 'Deployment', 'Configuration',
-    'Monitoring', 'Operations', 'Maintenance'
-  ];
 
   const results = [];
   
-  for (const pageName of commonPages) {
+  for (const pageName of COMMON_WIKI_PAGES) {
     try {
       const content = await getWikiPageContent(pageName);
       if (content && content.toLowerCase().includes(searchTerm.toLowerCase())) {
@@ -160,7 +163,6 @@ async function searchWikiContent(searchTerm: string) {
   
   return results;
 }
-
 // Helper function to extract RPC nodes from wiki content
 async function extractRPCNodes() {
   const rpcPages = ['RPC-Nodes', 'RPC_Nodes', 'RPC', 'Home', 'Overview'];
@@ -334,19 +336,10 @@ async function getWikiPagesList(args: any) {
     
     if (!pages) {
       // Fallback to common page names
-        const commonPages = [
-        'Home', 'Overview', 'Index', 'README',
-        'RPC-Nodes', 'RPC_Nodes', 'RPC', 'Nodes',
-        'Infrastructure', 'Servers', 'Providers', 'OCL-Providers',  // ← Add this
-        'Network', 'Deployment', 'Configuration',
-        'Monitoring', 'Operations', 'Maintenance',
-        'DevOps-Phone-Numbers', 'Contact', 'Engineers'  // ← Add these too
-        ];
-      
       return {
         content: [{
           type: "text",
-          text: `Common wiki pages to try:\n${commonPages.join(', ')}\n\nNote: Use get_wiki_page tool to retrieve specific page content.`
+          text: `Common wiki pages to try:\n${COMMON_WIKI_PAGES.join(', ')}\n\nNote: Use get_wiki_page tool to retrieve specific page content.`
         }]
       };
     }
