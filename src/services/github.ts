@@ -1,10 +1,10 @@
 import axios from "axios";
 
-// Common wiki pages to search - shared constant
-const COMMON_WIKI_PAGES = [
+// Fallback list - only used if API discovery fails
+const FALLBACK_WIKI_PAGES = [
   'Home', 'Overview', 'Index', 'README',
   'RPC-Nodes', 'RPC_Nodes', 'RPC', 'Nodes',
-  'Infrastructure', 'Servers', 'Providers', 'OCL-Providers',
+  'Infrastructure', 'Servers', 'Providers',
   'Network', 'Deployment', 'Configuration',
   'Monitoring', 'Operations', 'Maintenance',
   'DevOps-Phone-Numbers', 'Contact', 'Engineers'
@@ -44,7 +44,7 @@ export function getTools() {
         properties: {
           page_name: {
             type: "string",
-            description: "Name of the wiki page to retrieve (e.g., 'Home', 'RPC-Nodes')"
+            description: "Name of the wiki page to retrieve (e.g., 'Home', 'engineering/PageName')"
           }
         },
         required: ["page_name"],
@@ -60,7 +60,7 @@ export function getTools() {
     },
     {
       name: "get_wiki_pages_list",
-      description: "Get list of all available wiki pages",
+      description: "Get list of all available wiki pages (dynamically discovered)",
       inputSchema: {
         type: "object",
         properties: {},
@@ -97,7 +97,7 @@ export async function handleToolCall(name: string, args: any) {
 // Helper function to make authenticated requests to GitHub
 async function makeGitHubRequest(url: string, options: any = {}) {
   const config = getGitHubConfig();
-  
+
   if (!config.token) {
     throw new Error('GitHub token is not configured');
   }
@@ -120,11 +120,42 @@ async function makeGitHubRequest(url: string, options: any = {}) {
   }
 }
 
+// Helper function to recursively get all wiki pages
+async function getAllWikiPages(path = ''): Promise<string[]> {
+  const config = getGitHubConfig();
+  const url = `https://api.github.com/repos/${config.repoOwner}/${config.repoName}.wiki/contents/${path}`;
+  
+  try {
+    const items = await makeGitHubRequest(url);
+    if (!items || !Array.isArray(items)) return [];
+    
+    let allPages: string[] = [];
+    
+    for (const item of items) {
+      if (item.type === 'file' && item.name.endsWith('.md')) {
+        // It's a markdown file - add it (remove .md extension)
+        const pagePath = path ? `${path}/${item.name}` : item.name;
+        allPages.push(pagePath.replace('.md', ''));
+      } else if (item.type === 'dir') {
+        // It's a directory - recursively get pages from it
+        const subPath = path ? `${path}/${item.name}` : item.name;
+        const subPages = await getAllWikiPages(subPath);
+        allPages.push(...subPages);
+      }
+    }
+    
+    return allPages;
+  } catch (error) {
+    // Return empty array on error - will fallback to hardcoded list
+    return [];
+  }
+}
+
 // Helper function to get wiki page content
 async function getWikiPageContent(pageName: string) {
   const config = getGitHubConfig();
   const url = `https://raw.githubusercontent.com/wiki/${config.repoOwner}/${config.repoName}/${pageName}.md`;
-  
+
   try {
     const response = await axios.get(url, {
       headers: {
@@ -140,12 +171,19 @@ async function getWikiPageContent(pageName: string) {
   }
 }
 
-// Helper function to search wiki content
+// Helper function to search wiki content dynamically
 async function searchWikiContent(searchTerm: string) {
-
+  // First, get all available wiki pages dynamically
+  let allPages = await getAllWikiPages();
+  
+  if (allPages.length === 0) {
+    // Fallback to our hardcoded list if API fails
+    allPages = FALLBACK_WIKI_PAGES;
+  }
+  
   const results = [];
   
-  for (const pageName of COMMON_WIKI_PAGES) {
+  for (const pageName of allPages) {
     try {
       const content = await getWikiPageContent(pageName);
       if (content && content.toLowerCase().includes(searchTerm.toLowerCase())) {
@@ -163,9 +201,24 @@ async function searchWikiContent(searchTerm: string) {
   
   return results;
 }
+
 // Helper function to extract RPC nodes from wiki content
 async function extractRPCNodes() {
-  const rpcPages = ['RPC-Nodes', 'RPC_Nodes', 'RPC', 'Home', 'Overview'];
+  // Get all pages dynamically, then filter for RPC-related ones
+  let allPages = await getAllWikiPages();
+  
+  if (allPages.length === 0) {
+    // Fallback to specific RPC pages
+    allPages = ['RPC-Nodes', 'RPC_Nodes', 'RPC', 'Home', 'Overview'];
+  }
+  
+  // Filter to likely RPC-related pages
+  const rpcPages = allPages.filter(page => 
+    page.toLowerCase().includes('rpc') || 
+    page.toLowerCase().includes('node') ||
+    page === 'Home' || 
+    page === 'Overview'
+  );
   
   const rpcInfo = {
     nodes: [] as string[],
@@ -178,11 +231,11 @@ async function extractRPCNodes() {
       const content = await getWikiPageContent(pageName);
       if (content) {
         rpcInfo.raw_content[pageName] = content;
-        
+
         // Extract URLs that look like RPC/API endpoints
         const urlRegex = /(https?:\/\/[^\s\)]+(?:rpc|api|grpc)[^\s\)]*)/gi;
         const matches = content.match(urlRegex) || [];
-        
+
         matches.forEach((url: string) => {
           if (!rpcInfo.endpoints.includes(url)) {
             rpcInfo.endpoints.push(url);
@@ -192,7 +245,7 @@ async function extractRPCNodes() {
         // Look for structured RPC information
         const lines = content.split('\n');
         lines.forEach((line: string) => {
-          if (line.toLowerCase().includes('rpc:') || 
+          if (line.toLowerCase().includes('rpc:') ||
               line.toLowerCase().includes('api:') ||
               line.toLowerCase().includes('grpc:')) {
             rpcInfo.nodes.push(line.trim());
@@ -226,7 +279,7 @@ async function searchWiki(args: any) {
 
   try {
     const results = await searchWikiContent(query);
-    
+
     if (results.length === 0) {
       return {
         content: [{
@@ -272,12 +325,16 @@ async function getWikiPage(args: any) {
 
   try {
     const content = await getWikiPageContent(page_name);
-    
+
     if (!content) {
+      // Try to get available pages to suggest alternatives
+      const allPages = await getAllWikiPages();
+      const pageList = allPages.length > 0 ? allPages.join(', ') : 'Home, Overview, DevOps-Phone-Numbers';
+      
       return {
         content: [{
           type: "text",
-          text: `Wiki page "${page_name}" not found. Try common pages like: Home, Overview, RPC-Nodes, Infrastructure`
+          text: `Wiki page "${page_name}" not found. Available pages: ${pageList}`
         }]
       };
     }
@@ -301,7 +358,7 @@ async function getWikiPage(args: any) {
 async function listRpcNodes(args: any) {
   try {
     const rpcInfo = await extractRPCNodes();
-    
+
     const summary = {
       total_endpoints: rpcInfo.endpoints.length,
       total_nodes: rpcInfo.nodes.length,
@@ -327,38 +384,47 @@ async function listRpcNodes(args: any) {
 }
 
 async function getWikiPagesList(args: any) {
-  const config = getGitHubConfig();
-  
   try {
-    // Try to get the wiki repository information
-    const wikiUrl = `https://api.github.com/repos/${config.repoOwner}/${config.repoName}.wiki/contents`;
-    const pages = await makeGitHubRequest(wikiUrl);
+    // Get all pages dynamically
+    const allPages = await getAllWikiPages();
     
-    if (!pages) {
+    if (allPages.length === 0) {
       // Fallback to common page names
       return {
         content: [{
           type: "text",
-          text: `Common wiki pages to try:\n${COMMON_WIKI_PAGES.join(', ')}\n\nNote: Use get_wiki_page tool to retrieve specific page content.`
+          text: `Unable to fetch wiki pages dynamically. Common wiki pages to try:\n${FALLBACK_WIKI_PAGES.join(', ')}\n\nNote: Use get_wiki_page tool to retrieve specific page content.`
         }]
       };
     }
 
-    const pageList = pages
-      .filter((file: any) => file.name.endsWith('.md'))
-      .map((file: any) => file.name.replace('.md', ''));
+    // Organize pages by directory structure
+    const rootPages = allPages.filter(page => !page.includes('/'));
+    const subPages = allPages.filter(page => page.includes('/'));
+    
+    let response = `Dynamically discovered wiki pages:\n\n`;
+    
+    if (rootPages.length > 0) {
+      response += `Root Level Pages (${rootPages.length}):\n${rootPages.join(', ')}\n\n`;
+    }
+    
+    if (subPages.length > 0) {
+      response += `Subdirectory Pages (${subPages.length}):\n${subPages.join(', ')}\n\n`;
+    }
+    
+    response += `Total pages found: ${allPages.length}\n\nUse get_wiki_page tool to retrieve specific page content.`;
 
     return {
       content: [{
         type: "text",
-        text: `Available wiki pages:\n${pageList.join(', ')}\n\nUse get_wiki_page tool to retrieve specific page content.`
+        text: response
       }]
     };
   } catch (error: any) {
     return {
       content: [{
         type: "text",
-        text: `Error listing wiki pages: ${error.message}\n\nTry common pages: Home, Overview, RPC-Nodes, Infrastructure`
+        text: `Error listing wiki pages: ${error.message}\n\nTry common pages: Home, Overview, DevOps-Phone-Numbers`
       }]
     };
   }
