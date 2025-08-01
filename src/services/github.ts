@@ -120,34 +120,52 @@ async function makeGitHubRequest(url: string, options: any = {}) {
   }
 }
 
-// Helper function to recursively get all wiki pages
-async function getAllWikiPages(path = ''): Promise<string[]> {
+// Helper function to get all wiki pages using Git Trees API
+async function getAllWikiPages(): Promise<string[]> {
   const config = getGitHubConfig();
-  const url = `https://api.github.com/repos/${config.repoOwner}/${config.repoName}.wiki/contents/${path}`;
   
   try {
-    const items = await makeGitHubRequest(url);
-    if (!items || !Array.isArray(items)) return [];
+    // Get the default branch (usually master/main) tree for the wiki repo
+    const treeUrl = `https://api.github.com/repos/${config.repoOwner}/${config.repoName}.wiki/git/trees/master?recursive=1`;
+    const treeData = await makeGitHubRequest(treeUrl);
     
-    let allPages: string[] = [];
+    if (!treeData || !treeData.tree) {
+      return [];
+    }
     
-    for (const item of items) {
-      if (item.type === 'file' && item.name.endsWith('.md')) {
-        // It's a markdown file - add it (remove .md extension)
-        const pagePath = path ? `${path}/${item.name}` : item.name;
-        allPages.push(pagePath.replace('.md', ''));
-      } else if (item.type === 'dir') {
-        // It's a directory - recursively get pages from it
-        const subPath = path ? `${path}/${item.name}` : item.name;
-        const subPages = await getAllWikiPages(subPath);
-        allPages.push(...subPages);
+    // Extract all .md files from the tree
+    const allPages: string[] = [];
+    
+    for (const item of treeData.tree) {
+      if (item.type === 'blob' && item.path.endsWith('.md')) {
+        // Remove .md extension and add to list
+        allPages.push(item.path.replace('.md', ''));
       }
     }
     
     return allPages;
   } catch (error) {
-    // Return empty array on error - will fallback to hardcoded list
-    return [];
+    // If master doesn't work, try main branch
+    try {
+      const treeUrl = `https://api.github.com/repos/${config.repoOwner}/${config.repoName}.wiki/git/trees/main?recursive=1`;
+      const treeData = await makeGitHubRequest(treeUrl);
+      
+      if (!treeData || !treeData.tree) {
+        return [];
+      }
+      
+      const allPages: string[] = [];
+      
+      for (const item of treeData.tree) {
+        if (item.type === 'blob' && item.path.endsWith('.md')) {
+          allPages.push(item.path.replace('.md', ''));
+        }
+      }
+      
+      return allPages;
+    } catch (error2) {
+      return []; // Both failed
+    }
   }
 }
 
