@@ -120,39 +120,55 @@ async function makeGitHubRequest(url: string, options: any = {}) {
   }
 }
 
-// Helper function to discover wiki pages in the main repository
+// Helper function to discover wiki pages by testing known patterns
 async function getAllWikiPages(): Promise<string[]> {
-  const config = getGitHubConfig();
+  const pagesToTest = [
+    // Root level pages we know work
+    'Home',
+    'DevOps-Phone-Numbers', 
+    'Snapshots',
+    
+    // Engineering subdirectory pages (your actual paths)
+    'engineering/Overclock-Managed-Providers-on-Akash-Network',
+    'engineering/Akash-RPC-Nodes',
+    'engineering/Akash-Deployments', 
+    'engineering/Direnv',
+    
+    // OCL providers subdirectory pages (your actual paths)
+    'ocl-providers/OCL-Providers',
+    'ocl-providers/DC-Contacts',
+    
+    // Other common pages to test
+    'Overview', 'Index', 'README',
+    'RPC-Nodes', 'Infrastructure', 'Servers',
+  ];
+
+  const discoveredPages: string[] = [];
+  const tested = new Set<string>();
   
-  try {
-    // Get contents of the wiki directory in the main repository
-    const wikiDirUrl = `https://api.github.com/repos/${config.repoOwner}/${config.repoName}/contents/wiki?recursive=1`;
-    const contents = await makeGitHubRequest(wikiDirUrl);
+  // Test each page to see if it exists
+  for (const pageName of pagesToTest) {
+    if (tested.has(pageName)) continue;
+    tested.add(pageName);
     
-    if (!contents || !Array.isArray(contents)) {
-      return [];
-    }
-    
-    const discoveredPages: string[] = [];
-    
-    for (const item of contents) {
-      if (item.type === 'file' && item.path.endsWith('.md')) {
-        // Convert file path to page name: wiki/engineering/Page.md → engineering/Page
-        const pagePath = item.path.replace('wiki/', '').replace('.md', '');
-        discoveredPages.push(pagePath);
+    try {
+      const content = await getWikiPageContent(pageName);
+      if (content && content.trim().length > 0) {
+        discoveredPages.push(pageName);
       }
+    } catch (error) {
+      // Page doesn't exist, skip it
+      continue;
     }
-    
-    return discoveredPages;
-  } catch (error) {
-    return [];
   }
+  
+  return discoveredPages;
 }
 
 // Helper function to get wiki page content from main repository
 async function getWikiPageContent(pageName: string) {
   const config = getGitHubConfig();
-  // Convert page name back to repository path: engineering/Page → wiki/engineering/Page.md
+  // Convert page name to repository path: engineering/Page → wiki/engineering/Page.md
   const filePath = `wiki/${pageName}.md`;
   const url = `https://raw.githubusercontent.com/${config.repoOwner}/${config.repoName}/main/${filePath}`;
 
