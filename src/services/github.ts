@@ -122,35 +122,33 @@ async function makeGitHubRequest(url: string, options: any = {}) {
 
 // Helper function to discover wiki pages by testing known patterns
 async function getAllWikiPages(): Promise<string[]> {
-  // Test pages we know exist + common patterns + subdirectory patterns
   const pagesToTest = [
-    // Known working pages
+    // Test both the old working path and new paths
     'Home',
     'DevOps-Phone-Numbers',
-    
-    // Specific pages you want to focus on
-    'OCL-Providers',                    // ← The main provider page you want
-    'Akash-RPC-Nodes',                 // ← New page for testing
-    'Akash-Deployments',               // ← New page for testing  
-    'Direnv',                          // ← New page for testing
-    
-    // Original fallback pages (keep the useful ones)
+    'engineering/Overclock-Managed-Providers-on-Akash-Network', // ← Add this back to test
+    'Overclock-Managed-Providers-on-Akash-Network',
+    'OCL-Providers',
+    'Akash-RPC-Nodes',
+    'Akash-Deployments',
+    'Direnv',
     'Overview', 'Index', 'README',
-    'RPC-Nodes', 'RPC_Nodes', 'RPC', 'Nodes',
-    'Infrastructure', 'Servers', 'Providers',
-    'Network', 'Deployment', 'Configuration', 
-    'Monitoring', 'Operations', 'Maintenance',
-    'Contact', 'Engineers',
   ];
 
   const discoveredPages: string[] = [];
+  const tested = new Set<string>();
   
   // Test each page to see if it exists
   for (const pageName of pagesToTest) {
+    if (tested.has(pageName)) continue;
+    tested.add(pageName);
+    
     try {
       const content = await getWikiPageContent(pageName);
       if (content && content.trim().length > 0) {
         discoveredPages.push(pageName);
+        // Add some indication of successful discovery
+        console.log(`Found page: ${pageName}`);
       }
     } catch (error) {
       // Page doesn't exist, skip it
