@@ -120,56 +120,48 @@ async function makeGitHubRequest(url: string, options: any = {}) {
   }
 }
 
-// Helper function to get all wiki pages using Git Trees API with fallback
+// Helper function to discover wiki pages by testing known patterns
 async function getAllWikiPages(): Promise<string[]> {
-  const config = getGitHubConfig();
-  
-  // Try multiple approaches to get wiki pages
-  const attempts = [
-    // Attempt 1: Git Trees API with master branch
-    async () => {
-      const treeUrl = `https://api.github.com/repos/${config.repoOwner}/${config.repoName}.wiki/git/trees/master?recursive=1`;
-      const treeData = await makeGitHubRequest(treeUrl);
-      return treeData?.tree || null;
-    },
-    // Attempt 2: Git Trees API with main branch  
-    async () => {
-      const treeUrl = `https://api.github.com/repos/${config.repoOwner}/${config.repoName}.wiki/git/trees/main?recursive=1`;
-      const treeData = await makeGitHubRequest(treeUrl);
-      return treeData?.tree || null;
-    },
-    // Attempt 3: Try regular repo contents API (in case wiki is in main repo)
-    async () => {
-      const contentsUrl = `https://api.github.com/repos/${config.repoOwner}/${config.repoName}/contents/wiki?recursive=1`;
-      const contentsData = await makeGitHubRequest(contentsUrl);
-      return Array.isArray(contentsData) ? contentsData : null;
-    }
+  // Test pages we know exist + common patterns + subdirectory patterns
+  const pagesToTest = [
+    // Known working pages
+    'Home',
+    'DevOps-Phone-Numbers',
+    
+    // Original fallback pages
+    ...FALLBACK_WIKI_PAGES,
+    
+    // Engineering subdirectory patterns (based on your URL structure)
+    'engineering/Overclock-Managed-Providers-on-Akash-Network',
+    'engineering/OCL-Providers',
+    'engineering/Providers',
+    'engineering/Contact',
+    'engineering/Infrastructure',
+    'engineering/RPC-Nodes',
+    
+    // Other possible subdirectories
+    'docs/Home',
+    'docs/Overview',
+    'operations/Monitoring',
+    'operations/Maintenance',
   ];
 
-  for (const attempt of attempts) {
+  const discoveredPages: string[] = [];
+  
+  // Test each page to see if it exists
+  for (const pageName of pagesToTest) {
     try {
-      const tree = await attempt();
-      if (tree && Array.isArray(tree)) {
-        const allPages: string[] = [];
-        
-        for (const item of tree) {
-          if ((item.type === 'blob' || item.type === 'file') && item.path && item.path.endsWith('.md')) {
-            // Remove .md extension and add to list
-            allPages.push(item.path.replace('.md', ''));
-          }
-        }
-        
-        if (allPages.length > 0) {
-          return allPages; // Success!
-        }
+      const content = await getWikiPageContent(pageName);
+      if (content && content.trim().length > 0) {
+        discoveredPages.push(pageName);
       }
     } catch (error) {
-      // Continue to next attempt
+      // Page doesn't exist, skip it
       continue;
     }
   }
   
-  return []; // All attempts failed
+  return discoveredPages;
 }
 
 // Helper function to get wiki page content
