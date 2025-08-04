@@ -128,22 +128,19 @@ async function getAllWikiPages(): Promise<string[]> {
     'Home',
     'DevOps-Phone-Numbers',
     
-    // Original fallback pages
-    ...FALLBACK_WIKI_PAGES,
+    // Specific pages you want to focus on
+    'OCL-Providers',                    // ← The main provider page you want
+    'Akash-RPC-Nodes',                 // ← New page for testing
+    'Akash-Deployments',               // ← New page for testing  
+    'Direnv',                          // ← New page for testing
     
-    // Engineering subdirectory patterns (based on your URL structure)
-    'engineering/Overclock-Managed-Providers-on-Akash-Network',
-    'engineering/OCL-Providers',
-    'engineering/Providers',
-    'engineering/Contact',
-    'engineering/Infrastructure',
-    'engineering/RPC-Nodes',
-    
-    // Other possible subdirectories
-    'docs/Home',
-    'docs/Overview',
-    'operations/Monitoring',
-    'operations/Maintenance',
+    // Original fallback pages (keep the useful ones)
+    'Overview', 'Index', 'README',
+    'RPC-Nodes', 'RPC_Nodes', 'RPC', 'Nodes',
+    'Infrastructure', 'Servers', 'Providers',
+    'Network', 'Deployment', 'Configuration', 
+    'Monitoring', 'Operations', 'Maintenance',
+    'Contact', 'Engineers',
   ];
 
   const discoveredPages: string[] = [];
