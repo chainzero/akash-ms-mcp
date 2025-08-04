@@ -120,53 +120,56 @@ async function makeGitHubRequest(url: string, options: any = {}) {
   }
 }
 
-// Helper function to get all wiki pages using Git Trees API
+// Helper function to get all wiki pages using Git Trees API with fallback
 async function getAllWikiPages(): Promise<string[]> {
   const config = getGitHubConfig();
   
-  try {
-    // Get the default branch (usually master/main) tree for the wiki repo
-    const treeUrl = `https://api.github.com/repos/${config.repoOwner}/${config.repoName}.wiki/git/trees/master?recursive=1`;
-    const treeData = await makeGitHubRequest(treeUrl);
-    
-    if (!treeData || !treeData.tree) {
-      return [];
-    }
-    
-    // Extract all .md files from the tree
-    const allPages: string[] = [];
-    
-    for (const item of treeData.tree) {
-      if (item.type === 'blob' && item.path.endsWith('.md')) {
-        // Remove .md extension and add to list
-        allPages.push(item.path.replace('.md', ''));
-      }
-    }
-    
-    return allPages;
-  } catch (error) {
-    // If master doesn't work, try main branch
-    try {
+  // Try multiple approaches to get wiki pages
+  const attempts = [
+    // Attempt 1: Git Trees API with master branch
+    async () => {
+      const treeUrl = `https://api.github.com/repos/${config.repoOwner}/${config.repoName}.wiki/git/trees/master?recursive=1`;
+      const treeData = await makeGitHubRequest(treeUrl);
+      return treeData?.tree || null;
+    },
+    // Attempt 2: Git Trees API with main branch  
+    async () => {
       const treeUrl = `https://api.github.com/repos/${config.repoOwner}/${config.repoName}.wiki/git/trees/main?recursive=1`;
       const treeData = await makeGitHubRequest(treeUrl);
-      
-      if (!treeData || !treeData.tree) {
-        return [];
-      }
-      
-      const allPages: string[] = [];
-      
-      for (const item of treeData.tree) {
-        if (item.type === 'blob' && item.path.endsWith('.md')) {
-          allPages.push(item.path.replace('.md', ''));
+      return treeData?.tree || null;
+    },
+    // Attempt 3: Try regular repo contents API (in case wiki is in main repo)
+    async () => {
+      const contentsUrl = `https://api.github.com/repos/${config.repoOwner}/${config.repoName}/contents/wiki?recursive=1`;
+      const contentsData = await makeGitHubRequest(contentsUrl);
+      return Array.isArray(contentsData) ? contentsData : null;
+    }
+  ];
+
+  for (const attempt of attempts) {
+    try {
+      const tree = await attempt();
+      if (tree && Array.isArray(tree)) {
+        const allPages: string[] = [];
+        
+        for (const item of tree) {
+          if ((item.type === 'blob' || item.type === 'file') && item.path && item.path.endsWith('.md')) {
+            // Remove .md extension and add to list
+            allPages.push(item.path.replace('.md', ''));
+          }
+        }
+        
+        if (allPages.length > 0) {
+          return allPages; // Success!
         }
       }
-      
-      return allPages;
-    } catch (error2) {
-      return []; // Both failed
+    } catch (error) {
+      // Continue to next attempt
+      continue;
     }
   }
+  
+  return []; // All attempts failed
 }
 
 // Helper function to get wiki page content
@@ -407,11 +410,11 @@ async function getWikiPagesList(args: any) {
     const allPages = await getAllWikiPages();
     
     if (allPages.length === 0) {
-      // Fallback to common page names
+      // Fallback message with more detail
       return {
         content: [{
           type: "text",
-          text: `Unable to fetch wiki pages dynamically. Common wiki pages to try:\n${FALLBACK_WIKI_PAGES.join(', ')}\n\nNote: Use get_wiki_page tool to retrieve specific page content.`
+          text: `Unable to fetch wiki pages dynamically (GitHub API limitations).\n\nFallback - Common wiki pages to try:\n${FALLBACK_WIKI_PAGES.join(', ')}\n\nNote: Use get_wiki_page or search_wiki tools to access specific content.`
         }]
       };
     }
@@ -420,17 +423,17 @@ async function getWikiPagesList(args: any) {
     const rootPages = allPages.filter(page => !page.includes('/'));
     const subPages = allPages.filter(page => page.includes('/'));
     
-    let response = `Dynamically discovered wiki pages:\n\n`;
+    let response = `✅ Successfully discovered ${allPages.length} wiki pages dynamically!\n\n`;
     
     if (rootPages.length > 0) {
-      response += `Root Level Pages (${rootPages.length}):\n${rootPages.join(', ')}\n\n`;
+      response += `📁 Root Level Pages (${rootPages.length}):\n${rootPages.join(', ')}\n\n`;
     }
     
     if (subPages.length > 0) {
-      response += `Subdirectory Pages (${subPages.length}):\n${subPages.join(', ')}\n\n`;
+      response += `📂 Subdirectory Pages (${subPages.length}):\n${subPages.join(', ')}\n\n`;
     }
     
-    response += `Total pages found: ${allPages.length}\n\nUse get_wiki_page tool to retrieve specific page content.`;
+    response += `Use get_wiki_page tool with any of these page names to retrieve content.`;
 
     return {
       content: [{
@@ -442,8 +445,8 @@ async function getWikiPagesList(args: any) {
     return {
       content: [{
         type: "text",
-        text: `Error listing wiki pages: ${error.message}\n\nTry common pages: Home, Overview, DevOps-Phone-Numbers`
+        text: `Error in wiki pages discovery: ${error.message}\n\nFallback available pages: ${FALLBACK_WIKI_PAGES.join(', ')}`
       }]
     };
   }
-}
+}             
