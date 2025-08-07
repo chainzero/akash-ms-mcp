@@ -168,12 +168,30 @@ async function getAllWikiPages(): Promise<string[]> {
 // Helper function to get wiki page content from main repository
 async function getWikiPageContent(pageName: string) {
   const config = getGitHubConfig();
-  // Convert page name to repository path: engineering/Page → wiki/engineering/Page.md
+  
+  // Convert page name to repository path: ocl-providers/OCL-Providers → wiki/ocl-providers/OCL-Providers.md
   const filePath = `wiki/${pageName}.md`;
-  const url = `https://raw.githubusercontent.com/${config.repoOwner}/${config.repoName}/main/${filePath}`;
-
+  
+  // Try GitHub Contents API first (more reliable with fine-grained tokens)
+  const apiUrl = `https://api.github.com/repos/${config.repoOwner}/${config.repoName}/contents/${filePath}`;
+  
   try {
-    const response = await axios.get(url, {
+    // First try the Contents API
+    const response = await makeGitHubRequest(apiUrl);
+    if (response && response.content) {
+      // GitHub returns base64 encoded content
+      return Buffer.from(response.content, 'base64').toString('utf-8');
+    }
+  } catch (apiError) {
+    // If Contents API fails, fallback to raw.githubusercontent.com
+    console.warn(`Contents API failed for ${pageName}, trying raw URL:`, apiError.message);
+  }
+  
+  // Fallback to raw URL method
+  const rawUrl = `https://raw.githubusercontent.com/${config.repoOwner}/${config.repoName}/main/${filePath}`;
+  
+  try {
+    const response = await axios.get(rawUrl, {
       headers: {
         'Authorization': `token ${config.token}`,
       }
