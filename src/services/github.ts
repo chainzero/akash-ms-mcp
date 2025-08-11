@@ -184,7 +184,7 @@ async function getWikiPageContent(pageName: string) {
     }
   } catch (apiError) {
     // If Contents API fails, fallback to raw.githubusercontent.com
-    console.warn(`Contents API failed for ${pageName}, trying raw URL:`, apiError.message);
+    console.warn(`Contents API failed trying raw URL:`);
   }
   
   // Fallback to raw URL method
