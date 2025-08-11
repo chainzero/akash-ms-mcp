@@ -143,61 +143,15 @@ SUMMARY:
 }
 
 async function getAkashGpuIssues(args: any) {
-  // Test file creation first
-  fs.appendFileSync('/tmp/mcp-debug.log', `Function called at ${new Date().toISOString()}\n`);
-  
   try {
     const gpuIssues = await makeAkashRequest('/gpuissues');
     
-    // DEBUG: Write to log file
-    const debugData = {
-      timestamp: new Date().toISOString(),
-      rawResponse: gpuIssues,
-      hasGpuIssues: 'gpu_issues' in gpuIssues,
-      gpuIssuesLength: gpuIssues.gpu_issues?.length
-    };
-    
-    fs.appendFileSync('/tmp/mcp-debug.log', JSON.stringify(debugData) + '\n');
-    
-    if (!gpuIssues.gpu_issues || gpuIssues.gpu_issues.length === 0) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "✅ No GPU allocation issues detected across Akash provider network.",
-          },
-        ],
-      };
-    }
-
-    const report = `
-⚠️ AKASH GPU ALLOCATION ISSUES
-
-GPU Issues Detected: ${gpuIssues.gpu_issues.length}
-
-DETAILED BREAKDOWN:
-${gpuIssues.gpu_issues.map((provider: AkashProvider) => `
-🔴 HOST: ${provider.host || provider.provider}
-   • Node: ${provider.node || 'N/A'}
-   • Allocatable: ${provider.allocatable || 'Unknown'}
-   • Allocated: ${provider.allocated || 'Unknown'}
-   • Capacity: ${provider.capacity || 'Unknown'}
-   • Issue: ${provider.issue || provider.issue_type || 'GPU capacity vs. allocatable mismatch'}
-`).join('\n')}
-
-SUMMARY:
-- Total providers with GPU issues: ${gpuIssues.gpu_issues.length}
-- Issue types detected: Capacity mismatches, over-allocation
-- Impact: May affect GPU deployment availability
-
-These GPU allocation issues require attention to ensure proper resource management.
-    `;
-
+    // Return debug info directly in response
     return {
       content: [
         {
           type: "text",
-          text: report.trim(),
+          text: `DEBUG: Function called successfully. Raw response: ${JSON.stringify(gpuIssues, null, 2)}`,
         },
       ],
     };
@@ -206,12 +160,83 @@ These GPU allocation issues require attention to ensure proper resource manageme
       content: [
         {
           type: "text",
-          text: `Error fetching GPU issues: ${error.message}`,
+          text: `DEBUG: Error occurred: ${error.message}`,
         },
       ],
     };
   }
 }
+
+// async function getAkashGpuIssues(args: any) {
+//   // Test file creation first
+//   fs.appendFileSync('/tmp/mcp-debug.log', `Function called at ${new Date().toISOString()}\n`);
+  
+//   try {
+//     const gpuIssues = await makeAkashRequest('/gpuissues');
+    
+//     // DEBUG: Write to log file
+//     const debugData = {
+//       timestamp: new Date().toISOString(),
+//       rawResponse: gpuIssues,
+//       hasGpuIssues: 'gpu_issues' in gpuIssues,
+//       gpuIssuesLength: gpuIssues.gpu_issues?.length
+//     };
+    
+//     fs.appendFileSync('/tmp/mcp-debug.log', JSON.stringify(debugData) + '\n');
+    
+//     if (!gpuIssues.gpu_issues || gpuIssues.gpu_issues.length === 0) {
+//       return {
+//         content: [
+//           {
+//             type: "text",
+//             text: "✅ No GPU allocation issues detected across Akash provider network.",
+//           },
+//         ],
+//       };
+//     }
+
+//     const report = `
+// ⚠️ AKASH GPU ALLOCATION ISSUES
+
+// GPU Issues Detected: ${gpuIssues.gpu_issues.length}
+
+// DETAILED BREAKDOWN:
+// ${gpuIssues.gpu_issues.map((provider: AkashProvider) => `
+// 🔴 HOST: ${provider.host || provider.provider}
+//    • Node: ${provider.node || 'N/A'}
+//    • Allocatable: ${provider.allocatable || 'Unknown'}
+//    • Allocated: ${provider.allocated || 'Unknown'}
+//    • Capacity: ${provider.capacity || 'Unknown'}
+//    • Issue: ${provider.issue || provider.issue_type || 'GPU capacity vs. allocatable mismatch'}
+// `).join('\n')}
+
+// SUMMARY:
+// - Total providers with GPU issues: ${gpuIssues.gpu_issues.length}
+// - Issue types detected: Capacity mismatches, over-allocation
+// - Impact: May affect GPU deployment availability
+
+// These GPU allocation issues require attention to ensure proper resource management.
+//     `;
+
+//     return {
+//       content: [
+//         {
+//           type: "text",
+//           text: report.trim(),
+//         },
+//       ],
+//     };
+//   } catch (error: any) {
+//     return {
+//       content: [
+//         {
+//           type: "text",
+//           text: `Error fetching GPU issues: ${error.message}`,
+//         },
+//       ],
+//     };
+//   }
+// }
 
 async function getAkashCpuIssues(args: any) {
   try {
