@@ -145,6 +145,13 @@ async function getAkashGpuIssues(args: any) {
   try {
     const gpuIssues = await makeAkashRequest('/gpuissues');
     
+    // DEBUG: Log the raw API response
+    console.log('DEBUG: Raw GPU issues response:', JSON.stringify(gpuIssues, null, 2));
+    console.log('DEBUG: Type of gpuIssues:', typeof gpuIssues);
+    console.log('DEBUG: gpuIssues.gpu_issues exists?', 'gpu_issues' in gpuIssues);
+    console.log('DEBUG: gpuIssues.gpu_issues value:', gpuIssues.gpu_issues);
+    console.log('DEBUG: gpuIssues.gpu_issues length:', gpuIssues.gpu_issues?.length);
+    
     if (!gpuIssues.gpu_issues || gpuIssues.gpu_issues.length === 0) {
       return {
         content: [
