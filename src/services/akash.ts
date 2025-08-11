@@ -145,7 +145,7 @@ async function getAkashGpuIssues(args: any) {
   try {
     const gpuIssues = await makeAkashRequest('/gpuissues');
     
-    if (!gpuIssues.providers_with_issues || gpuIssues.providers_with_issues.length === 0) {
+    if (!gpuIssues.gpu_issues || gpuIssues.gpu_issues.length === 0) {
       return {
         content: [
           {
@@ -159,10 +159,10 @@ async function getAkashGpuIssues(args: any) {
     const report = `
 ⚠️ AKASH GPU ALLOCATION ISSUES
 
-GPU Issues Detected: ${gpuIssues.providers_with_issues.length}
+GPU Issues Detected: ${gpuIssues.gpu_issues.length}
 
 DETAILED BREAKDOWN:
-${gpuIssues.providers_with_issues.map((provider: AkashProvider) => `
+${gpuIssues.gpu_issues.map((provider: AkashProvider) => `
 🔴 HOST: ${provider.host || provider.provider}
    • Node: ${provider.node || 'N/A'}
    • Allocatable: ${provider.allocatable || 'Unknown'}
@@ -172,7 +172,7 @@ ${gpuIssues.providers_with_issues.map((provider: AkashProvider) => `
 `).join('\n')}
 
 SUMMARY:
-- Total providers with GPU issues: ${gpuIssues.providers_with_issues.length}
+- Total providers with GPU issues: ${gpuIssues.gpu_issues.length}
 - Issue types detected: Capacity mismatches, over-allocation
 - Impact: May affect GPU deployment availability
 
@@ -439,10 +439,10 @@ ${netdataAlarms.roomsWithAlarms.map(room =>
 ===== AKASH GPU ALLOCATION ISSUES =====
 `;
 
-    if (gpuIssues.providers_with_issues && gpuIssues.providers_with_issues.length > 0) {
+    if (gpuIssues.gpu_issues && gpuIssues.gpu_issues.length > 0) {
       report += `
 HOST                                     NODE       ALLOCATABLE   ALLOCATED   CAPACITY  ISSUE
-${gpuIssues.providers_with_issues.map((provider: AkashProvider) => 
+${gpuIssues.gpu_issues.map((provider: AkashProvider) =>  
         formatTableRow(
           provider.host || provider.provider || '', 
           provider.node || 'N/A',
@@ -548,7 +548,7 @@ No partial provider failures detected
     // Enhanced summary statistics
     const totalInfrastructureIssues = netdataAlarms.totals.warnings + netdataAlarms.totals.critical + netdataAlarms.totals.unreachable;
     const totalAkashIssues = 
-      (gpuIssues.providers_with_issues?.length || 0) +
+      (gpuIssues.gpu_issues?.length || 0) +
       (cpuIssues.nodes_with_issues?.length || 0) + 
       (memoryIssues.nodes_with_issues?.length || 0) +
       (downProviders.down_providers?.length || 0) +
@@ -565,7 +565,7 @@ INFRASTRUCTURE MONITORING (NetData):
 - Total Infrastructure Issues: ${totalInfrastructureIssues}
 
 PROVIDER NETWORK MONITORING (Akash):
-- GPU Issues: ${gpuIssues.providers_with_issues?.length || 0}
+- GPU Issues: ${gpuIssues.gpu_issues?.length || 0}
 - CPU Issues: ${cpuIssues.nodes_with_issues?.length || 0}
 - Memory Issues: ${memoryIssues.nodes_with_issues?.length || 0}
 - Down Providers: ${downProviders.down_providers?.length || 0}
