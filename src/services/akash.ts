@@ -143,6 +143,9 @@ SUMMARY:
 }
 
 async function getAkashGpuIssues(args: any) {
+  // Test file creation first
+  fs.appendFileSync('/tmp/mcp-debug.log', `Function called at ${new Date().toISOString()}\n`);
+  
   try {
     const gpuIssues = await makeAkashRequest('/gpuissues');
     
