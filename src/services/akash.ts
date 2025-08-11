@@ -1,6 +1,7 @@
 import { makeAkashRequest, config } from "../utils.js";
 import { getNetDataAlarms } from "./netdata.js";
 import type { AkashProvider } from "../types.js";
+import fs from 'fs';
 
 // Akash tool definitions
 export function getTools() {
@@ -145,22 +146,22 @@ async function getAkashGpuIssues(args: any) {
   try {
     const gpuIssues = await makeAkashRequest('/gpuissues');
     
-    // DEBUG: Include debug info in the actual response
-    const debugInfo = `
-DEBUG INFO:
-- Raw response type: ${typeof gpuIssues}
-- Has gpu_issues property: ${'gpu_issues' in gpuIssues}
-- gpu_issues value: ${JSON.stringify(gpuIssues.gpu_issues)}
-- gpu_issues length: ${gpuIssues.gpu_issues?.length}
-- Full response: ${JSON.stringify(gpuIssues, null, 2)}
-`;
+    // DEBUG: Write to log file
+    const debugData = {
+      timestamp: new Date().toISOString(),
+      rawResponse: gpuIssues,
+      hasGpuIssues: 'gpu_issues' in gpuIssues,
+      gpuIssuesLength: gpuIssues.gpu_issues?.length
+    };
+    
+    fs.appendFileSync('/tmp/mcp-debug.log', JSON.stringify(debugData) + '\n');
     
     if (!gpuIssues.gpu_issues || gpuIssues.gpu_issues.length === 0) {
       return {
         content: [
           {
             type: "text",
-            text: `✅ No GPU allocation issues detected across Akash provider network.\n\n${debugInfo}`,
+            text: "✅ No GPU allocation issues detected across Akash provider network.",
           },
         ],
       };
