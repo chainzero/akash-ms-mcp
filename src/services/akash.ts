@@ -156,7 +156,7 @@ async function getAkashGpuIssues(args: any) {
     
     fs.appendFileSync('/tmp/mcp-debug.log', JSON.stringify(debugData) + '\n');
     
-    if (!gpuIssues.gpu_issues || gpuIssues.gpu_issues.length === 0) {
+    if (!gpuIssues.gpu_issues || !Array.isArray(gpuIssues.gpu_issues) || gpuIssues.gpu_issues.length === 0) {
       return {
         content: [
           {
