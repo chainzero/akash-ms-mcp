@@ -450,7 +450,7 @@ ${netdataAlarms.roomsWithAlarms.map(room =>
 ===== AKASH GPU ALLOCATION ISSUES =====
 `;
 
-    if (gpuIssues.gpu_issues && gpuIssues.gpu_issues.length > 0) {
+    if (gpuIssues.gpu_issues && Array.isArray(gpuIssues.gpu_issues) && gpuIssues.gpu_issues.length > 0) {
       report += `
 HOST                                     NODE       ALLOCATABLE   ALLOCATED   CAPACITY  ISSUE
 ${gpuIssues.gpu_issues.map((provider: AkashProvider) =>  
