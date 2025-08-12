@@ -576,11 +576,11 @@ INFRASTRUCTURE MONITORING (NetData):
 - Total Infrastructure Issues: ${totalInfrastructureIssues}
 
 PROVIDER NETWORK MONITORING (Akash):
-- GPU Issues: ${gpuIssues.gpu_issues?.length || 0}
-- CPU Issues: ${cpuIssues.nodes_with_issues?.length || 0}
-- Memory Issues: ${memoryIssues.nodes_with_issues?.length || 0}
-- Down Providers: ${downProviders.down_providers?.length || 0}
-- Partial Failures: ${partialFailures.providers_with_partial_failures?.length || 0}
+- GPU Issues: ${Array.isArray(gpuIssues.gpu_issues) ? gpuIssues.gpu_issues.length : 0}
+- CPU Issues: ${Array.isArray(cpuIssues.nodes_with_issues) ? cpuIssues.nodes_with_issues.length : 0}
+- Memory Issues: ${Array.isArray(memoryIssues.nodes_with_issues) ? memoryIssues.nodes_with_issues.length : 0}
+- Down Providers: ${Array.isArray(downProviders.down_providers) ? downProviders.down_providers.length : 0}
+- Partial Failures: ${Array.isArray(partialFailures.providers_with_partial_failures) ? partialFailures.providers_with_partial_failures.length : 0}
 - Total Provider Issues: ${totalAkashIssues}
 
 OVERALL HEALTH STATUS:
