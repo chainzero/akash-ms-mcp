@@ -559,7 +559,7 @@ No partial provider failures detected
     // Enhanced summary statistics
     const totalInfrastructureIssues = netdataAlarms.totals.warnings + netdataAlarms.totals.critical + netdataAlarms.totals.unreachable;
     const totalAkashIssues = 
-      (gpuIssues.gpu_issues?.length || 0) +
+      (gpuIssues.gpu_issues?.length || 0) +  // This might be accessing .length on a non-array
       (cpuIssues.nodes_with_issues?.length || 0) + 
       (memoryIssues.nodes_with_issues?.length || 0) +
       (downProviders.down_providers?.length || 0) +
