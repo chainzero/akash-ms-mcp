@@ -559,11 +559,11 @@ No partial provider failures detected
     // Enhanced summary statistics
     const totalInfrastructureIssues = netdataAlarms.totals.warnings + netdataAlarms.totals.critical + netdataAlarms.totals.unreachable;
     const totalAkashIssues = 
-      (gpuIssues.gpu_issues?.length || 0) +  // This might be accessing .length on a non-array
-      (cpuIssues.nodes_with_issues?.length || 0) + 
-      (memoryIssues.nodes_with_issues?.length || 0) +
-      (downProviders.down_providers?.length || 0) +
-      (partialFailures.providers_with_partial_failures?.length || 0);
+      (Array.isArray(gpuIssues.gpu_issues) ? gpuIssues.gpu_issues.length : 0) +
+      (Array.isArray(cpuIssues.nodes_with_issues) ? cpuIssues.nodes_with_issues.length : 0) + 
+      (Array.isArray(memoryIssues.nodes_with_issues) ? memoryIssues.nodes_with_issues.length : 0) +
+      (Array.isArray(downProviders.down_providers) ? downProviders.down_providers.length : 0) +
+      (Array.isArray(partialFailures.providers_with_partial_failures) ? partialFailures.providers_with_partial_failures.length : 0);
     
     const totalAllIssues = totalInfrastructureIssues + totalAkashIssues;
 
